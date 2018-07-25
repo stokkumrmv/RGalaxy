@@ -1,0 +1,263 @@
+---
+title: "R functions to Galaxy tools"
+author: "Lodewic van Twillert"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r libraries}
+# install.packages(RGalaxy)
+library(RGalaxy) # We still need some core functions that we haven't edited yet
+```
+
+# Generating a Galaxy tool from local R scripts
+
+This vignette is the first attempt to generate a Galaxy tool from an arbitrary
+R script. The script is expected to include functions with roxygen-style 
+documentation.
+
+Also, these R functions should be lightly edited so that their expected 
+parameters can be parsed by the functions from the [RGalaxy](https://bioconductor.org/packages/release/bioc/html/RGalaxy.html)
+package.
+
+The biggest shortcoming of the RGalaxy package in my opinion is that the generated
+tool script relies on the used R function to be in a publically available package.
+The Galaxy tools will not include the right requirements tags needed to publish 
+the generated Galaxy tools to any Galaxy instance.
+
+Our approach will use a lot of the functionality of the RGalaxy package, but 
+rewritten in a way that we use arbitrary custom R functions. To see an example
+workflow of how to generate tools using RGalaxy, see 
+[this RGalaxy vignette](https://bioconductor.org/packages/release/bioc/vignettes/RGalaxy/inst/doc/RGalaxy-vignette.html). However, the vignette is not very easy to follow but
+it shows some examples and descriptions that we won't go over in this document.
+
+# Creating a basic galaxy tool
+
+Your R scripts need to be self-contained function definitions, for now.
+Later this should be extended to include tools that depend on other local functions
+that may be loaded with a simple `source()` command.
+
+The source R scripts can be given as a character vector of filenames, relative
+to the current working directory.
+
+## AddTwoNumbersWithTest
+
+In this case we use the `addTwoNumbersWithTest.R`. This file includes one very
+simple function defintion. All this script included is a function to sum two numbers and write the output to
+a file. In Galaxy we always expect the output to be a file, or collection of files.
+You can output R variables in .rds format, which may force you to change some
+other functions to take a file input rather than just an R variable.
+
+Notice the following about the function definition below,
+
+  * [roxygen2](http://kbroman.org/pkg_primer/pages/docs.html)-style comments for function documentation
+  * The input parameters are [Galaxy Parameter Classes](https://rdrr.io/bioc/RGalaxy/man/GalaxyClasses.html)
+  * The output is written to a .txt file
+  
+The documentation is used to create a help section to display in Galaxy.
+
+The input parameters are defined by Galaxy Parameter Classes, following the 
+methods in the RGalaxy package. This allows galaxy to understand the expected
+parameters and show them nicely in the Galaxy UI.
+
+```{r}
+# The addTwoNumbersTest.R file
+
+#' Add to numbers
+#' 
+#' A test function to use as an example to create a galaxy tool.
+#' It takes two numeric values and returns the sum to a .txt file.
+#'
+#' @param number1 First numeric value to sum
+#' @param number2 Second numeric value to sum
+#' @param sum Output file
+#' 
+#' @details
+#' Both arguments are required and contain test values to
+#' automatically generate tool tests with.
+#' These tests are included in the output .xml tool definition, and
+#' can be tested using Planemo's test command.
+#'
+#' @return The sum of two values
+#' @export
+#'
+#' @examples
+# outfile <- tempfile(pattern = "sum")
+# addTwoNumbersWithTest(5, 5, sum = outfile)
+# readLines(outfile)
+#' 
+addTwoNumbersWithTest <- 
+  function(
+    number1=GalaxyNumericParam(required=TRUE, testValues=5L),
+    number2=GalaxyNumericParam(required=TRUE, testValues=5L),
+    sum=GalaxyOutput("sum", "txt"))
+  {
+    cat(paste0(number1 + number2, "\n"), file=sum)
+  }
+```
+
+You can still use this function straight in R, which is handy for testing but
+in many cases you could just make it a habit of writing function definitions like
+this right away!
+
+```{r}
+# Example of function output using normal R variables
+outfile <- tempfile()
+addTwoNumbersWithTest(number1 = 5, number2 = 5, sum = outfile)
+readLines(outfile)
+```
+
+## Setting up tool output
+
+The output will be written to a tool directory, `toolDir`.
+You may have only 1 tool directory but still have different groups of tools, 
+set by `toolGroup`. 
+
+```{r Set parameters}
+toolScripts <- c("addTwoNumbersWithTest.R")
+toolDir <- "tools"
+toolGroup <- "mytool"
+toolPath <- file.path(toolDir, toolGroup)
+
+# Create tool directory if it does not yet exist
+if (!dir.exists(toolPath)) {
+  warning(sprintf("Tool directory '%s' does not exist and will be created",
+                  toolPath))
+  dir.create(toolPath, recursive = T)
+}
+```
+
+## Creating temporary package
+
+Since our functions to transform into galaxy tools are not part of a package 
+we can't just use `roxygen2::roxygenise()`. For us to create documentation the 
+scripts need to be part of a package. So we create a temporary package for our functions.
+
+```{r}
+require(devtools)
+
+# Create temporary package directory
+tempPackageDir <- file.path(tempdir(), "TempGalaxyToolPackage")
+# Initialize R package file structure
+if (dir.exists(tempPackageDir)) unlink(tempPackageDir, recursive = T)
+devtools::create(path = tempPackageDir,
+                 rstudio = F)
+
+# Copy scripts to package R directory
+file.copy(from = toolScripts, to = file.path(tempPackageDir, "R"))
+# Document R functions in the R directory
+devtools::document(tempPackageDir)
+
+# File directory example
+list.files(tempPackageDir, recursive = T)
+```
+
+For every **documented** function we can create a galaxy tool.
+Every function gets its own .Rd file in the `man/` directory. Using this
+we can list the functions to galaxify.
+
+```{r List functions to galaxify}
+# List all functions to galaxify
+#   Based on the criteria that they need to be documented
+functionDocs <- list.files(file.path(tempPackageDir, "man"))
+# Only 1 function in this case, otherwise we should create a loop.
+funcName <- sapply(functionDocs, gsub, pattern = ".Rd", replacement = "")
+cat(funcName,
+    sep = "\n")
+```
+
+## Prepare documentation and function definition
+
+Firstly we need to gather the documentation for our new tool/function.
+This can be found in the `man/` directory of our temporary package. 
+
+Here we print the contents of the .Rd documentation file created when we ran the
+`devtools::document()` function. These files get created by the `roxygen2`package,
+look up the documentation if you wish to learn more about the options and 
+formatting.
+
+```{r Get documentation for addTwoNumbersWithTest}
+rd <- parse_Rd(file.path(tempPackageDir, "man", functionDocs))
+print(rd)
+```
+
+```{r Get definition of addTwoNumbersWithTest}
+fullToolDir <- toolPath
+scriptFileName <-  toolScripts
+source(scriptFileName)
+functionToGalaxify <- get(funcName) # Get the function to galaxify
+funcInfo <- list()
+print(formals(functionToGalaxify))
+```
+
+# Further work
+
+This is still a work in progress, below are the next steps to rewrite.
+All this code is taken from the RGalaxy package, or specifically from my
+edited Github mirror of it [found here](https://github.com/Lodewic/RGalaxy).
+
+Look for the `R/` repository and you'll find the `R/galaxy.R` script that contains
+most of the functions we need. Although many of the functions we DONT need, 
+so we will work on rewriting the required functions.
+
+```{r work in progress, eval = FALSE}
+if  (  length(names(formals(functionToGalaxify)))   > length(formals(functionToGalaxify)) )
+  gstop("All arguments to Galaxy must be named.")
+
+for (param in names(formals(functionToGalaxify)))
+  funcInfo[[param]] <- getFuncInfo(functionToGalaxify, param)
+
+# print(funcInfo)
+if (!isTestable(funcInfo, funcName, package, functionalTestDirectory)) 
+  gwarning("Not enough information to create a functional test.")
+  
+if (!suppressWarnings(any(lapply(funcInfo,
+  function(x)x$type=="GalaxyOutput"))))
+{
+  gstop(paste("You must supply at least one GalaxyOutput",
+      "object."))
+}
+
+createScriptFile(scriptFileName, functionToGalaxify, funcName, funcInfo,
+  package, RserveConnection)
+
+### Create tool from scripts and documentation
+
+
+
+
+# file.copy(system.file("galaxy", "tool_conf.xml", package="RGalaxy"),
+#           file.path(galaxyHome, "tool_conf.xml"), overwrite=FALSE)
+
+# functionalTestDirectory <- "inst/functionalTests"
+# funcTestDirectory <- file.path(functionalTestDirectory, funcName)
+# message("Trying to create functional tests...")
+# funTest <- CreateFunctionalTest(funcName, functionalTestDirectory)
+# 
+# mywd <- getwd()
+
+# Make temporary package with R scripts included
+# These scripts can then include Roxygen2-style comments as is used for package
+# documentation.
+#   RGalaxy requires your scripts to be in a package, most importantly to be
+#   able to use the generated documentation files (.rd format). 
+
+
+message("Building galaxy tool...")
+galaxy(funcName,
+       galaxyConfig=GalaxyConfig(galaxyHome, toolDir,
+                                 "Local tools", toolDir),
+       RserveConnection=NULL,
+       functionalTestDirectory = functionalTestDirectory)
+```

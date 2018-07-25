@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1526569021086.000,
+    "dirty" : false,
+    "encoding" : "ISO8859-1",
+    "folds" : "219|5|342|4|\n",
+    "hash" : "679910719",
+    "id" : "858A8330",
+    "lastKnownWriteTime" : 1526583402,
+    "last_content_update" : 1526583402320,
+    "path" : "~/GitHub/RGalaxy/R/galaxy.R",
+    "project_path" : "R/galaxy.R",
+    "properties" : {
+        "cursorPosition" : "374,47",
+        "docOutlineVisible" : "1",
+        "scrollLine" : "218"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

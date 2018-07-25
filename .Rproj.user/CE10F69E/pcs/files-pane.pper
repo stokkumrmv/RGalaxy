@@ -1,0 +1,9 @@
+{
+    "path" : "~/GitLab/Galaxy",
+    "sortOrder" : [
+        {
+            "ascending" : true,
+            "columnIndex" : 2
+        }
+    ]
+}

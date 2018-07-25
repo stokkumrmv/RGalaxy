@@ -1,0 +1,36 @@
+<tool id="CsvToCsv" name="Csv To Csv" version="0.0.0.9000">
+  <description>Write csv to csv for testing</description>
+  <command interpreter="Rscript --vanilla">CsvToCsv.R
+       #if str($file.input).strip() != "":
+          --file.input="$file.input"
+       #end if
+       #if str($output.csv).strip() != "":
+          --output.csv="$output.csv"
+       #end if
+
+2&gt;&amp;1</command>
+  <inputs>
+    <param optional="false" name="file.input" format="data" type="data" help="" label="[required] File.input">
+      <validator type="empty_field" message="This field is required."/>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="csv" name="output.csv" label="counts.csv"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="file.input" value="Liver_Counts.csv"/>
+      <output name="output.csv" file="counts.csv"/>
+    </test>
+  </tests>
+  <help>
+**Description**
+
+Write csv to csv for testing
+
+
+**Details**
+
+Some details about this function:)
+</help>
+</tool>

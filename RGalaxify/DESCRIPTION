@@ -1,0 +1,25 @@
+Package: RGalaxify
+Title: A local edited version of the RGalaxy package
+Description: Given an R function including roxygen2 documentation, create a 
+    Galaxy tool definition.
+Version: 0.0.99
+Authors@R: person("Lodewic", "van Twillert", 
+    email = "lodewic.vantwillert@gmail.com", role = c("aut", "cre"))
+Depends:
+    RGalaxy
+Imports:
+    roxygen2
+Suggests:
+    rmarkdown
+License: file LICENSE
+KeepSource: TRUE
+Collate:
+    'AllClasses.R'
+    'galaxy.R'
+    'man.R'
+    'test_functions.R'
+    'utils.R'
+Encoding: UTF-8
+LazyData: true
+VignetteBuilder: knitr
+RoxygenNote: 6.0.1.9000

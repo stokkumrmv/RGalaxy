@@ -1,0 +1,41 @@
+<tool id="plaatje" name="Plaatje">
+  <description> Test plaatje met random getallen</description>
+  <requirements>
+    <requirement type="package" version="1.4.4">r-optparse</requirement>
+    <requirement type="package" version="1.22.0">bioconductor-rgalaxy</requirement>
+    <requirement type="package" version="2.2.1">r-ggplot2</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+    ######### one important path:
+    ######### 1. path to tool installation directory
+    export TOOL_INSTALL_DIR='${__tool_directory__}' &&
+
+    Rscript '$__tool_directory__/plaatje'.R
+       #if str($points).strip() != "":
+          --points="$points"
+       #end if
+       #if str($file).strip() != "":
+          --file="$file"
+       #end if
+]]></command>
+  <inputs>
+    <param optional="false" name="points" type="float" value="" help="" label="[required] Number of Points">
+      <validator type="empty_field" message="This field is required."/>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="png" name="file" label="Figure_test.png"/>
+  </outputs>
+  <help>
+**Description**
+
+Test plaatje met random getallen
+</help>
+  <tests>
+    <test>
+      <param name="points" value="100"/>
+      <output name="file" file="Figure_test.png"/>
+    </test>
+  </tests>
+  <citations/>
+</tool>
