@@ -12,7 +12,7 @@ CreateGalaxyTools
 
 Galaxy is a platform to publish analysis tools for reproducible and data-intensive research, specifically facilitating bioinformatics. This repository contains an R package called `RGalaxify` that is used to collect R scripts, rewritten as functions in order to generate Galaxy tools. This package is heavily borrowing from the [RGalaxy](https://bioconductor.org/packages/release/bioc/html/RGalaxy.html). 
 
-This readme is build up as follows. First, an example is shown of the creation of a simple Galaxy XLM tool based on a R script. First by rewriting the R script as commmand-line runnable function and then wrapping the code in XML to create the actual tool. Second, it is explained how to get a local instance of Galaxy with Planemo running using Docker to test-run and create the Galaxy tools using this R package. 
+This readme is build up as follows. First, an example is shown of the creation of a simple Galaxy XML-wrapped tool based on a R script. First by rewriting the R script as commmand-line runnable function and then wrapping the code in XML to create the actual tool. Second, it is explained how to get a local instance of Galaxy with Planemo running using Docker to test-run and create the Galaxy tools using this R package. 
 
 # Planning:
 ```bash
